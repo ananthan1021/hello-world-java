@@ -3,7 +3,8 @@ name: Build & Deploy Java Azure Function
 on:
   push:
     branches:
-      - main  # Trigger on main branch push
+      - master  # Trigger on main branch push
+  
 
 jobs:
   build-and-deploy:
