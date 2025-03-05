@@ -1,55 +1,35 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/azure/functions-action
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-
-name: Build and deploy Java project to Azure Function App - myfunctionappi123sdk
+name: Build & Deploy Java Azure Function
 
 on:
   push:
     branches:
-      - master
-  workflow_dispatch:
-
-env:
-  AZURE_FUNCTIONAPP_NAME: myfunctionappi123sdk # set this to your function app name on Azure
-  PACKAGE_DIRECTORY: '.' # set this to the directory which contains pom.xml file
- 
+      - main  # Trigger on main branch push
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
 
     steps:
-      - name: 'Checkout GitHub Action'
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Java Sdk ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v1
-        with: |+
-          java-version: ${{ env.JAVA_VERSION }}
-
-      - name: 'Restore Project Dependencies Using Mvn'
-        shell: pwsh
-        run: |+
-          pushd './${{ env.PACKAGE_DIRECTORY }}'
-          mvn clean package
-          popd
-      
-      - name: Login to Azure
-        uses: azure/login@v2
+      - name: Set up Java JDK 17
+        uses: actions/setup-java@v3
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_AEDD9B1783F04AB0A452772400AE752B }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_2987E8BA371246A9A6DFBB8025E368BC }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_EE1A67E0230E44D6B75F3F29E6F8C131 }}
+          distribution: 'temurin'
+          java-version: '17'
 
-      - name: 'Run Azure Functions Action'
-        uses: Azure/functions-action@v1
-        id: fa
+      - name: Build with Maven
+        run: mvn clean package -B
+
+      - name: Publish Artifact
+        run: |
+          mkdir -p packaged-function
+          cp target/azure-functions-*.jar packaged-function/
+
+      - name: Deploy to Azure Functions
+        uses: azure/functions-action@v1
         with:
-          app-name: 'myfunctionappi123sdk'
-          slot-name: 'Production'
-          package: '${{ env.PACKAGE_DIRECTORY }}'
-          respect-pom-xml: true
-          
+          app-name: "your-function-app-name"  # Replace with your Function App name
+          publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
+          package: packaged-function
